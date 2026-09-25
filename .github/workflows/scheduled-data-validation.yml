@@ -1,0 +1,47 @@
+name: Scheduled Data Validation
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  validate-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pandas
+        run: pip install pandas openpyxl
+
+      - name: Validate CSV files
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+
+          data_dir = Path("csv")
+          files = sorted(data_dir.glob("*.csv"))
+
+          if not files:
+              raise SystemExit("No CSV files found")
+
+          print(f"Found {len(files)} CSV files")
+
+          for file in files:
+              df = pd.read_csv(file)
+
+              if df.empty:
+                  raise ValueError(f"Empty CSV: {file}")
+
+              print(f"OK: {file} -> {len(df)} rows")
+
+          print("Scheduled data validation completed successfully.")
+          PY
